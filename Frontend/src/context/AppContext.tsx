@@ -2,9 +2,12 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Worker, Payroll, DashboardStats, MonthlyData, User } from '@/types';
 import * as api from '@/lib/api';
 import { calculateSalary, getCurrentMonthYear, getMonthName } from '@/lib/salary-utils';
+import { toast } from 'sonner';
+import { detectWorkerFraud, detectPayrollFraud } from '@/lib/fraud-detection';
 
 interface AppContextType {
   user: User | null;
+  setUser: (user: User | null) => void;
   workers: Worker[];
   payrolls: Payroll[];
   stats: DashboardStats;
@@ -13,7 +16,8 @@ interface AppContextType {
   addWorker: (worker: Omit<Worker, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateWorker: (id: string, updates: Partial<Worker>) => Promise<void>;
   deleteWorker: (id: string) => Promise<void>;
-  processPayroll: (workerId: string, paymentMethod: 'cash' | 'bank_transfer' | 'cheque', presentDays?: number, leaveDays?: number) => Promise<Payroll>;
+  processPayroll: (workerId: string, paymentMethod: 'cash' | 'bank_transfer' | 'cheque', presentDays?: number, leaveDays?: number, otHours?: number, incentives?: number, otherDeductions?: number) => Promise<Payroll>;
+  bulkProcessPayroll: (payrolls: any[]) => Promise<{ processed_count: number, errors: string[] }>;
   refreshStats: () => Promise<void>;
   reloadData: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
@@ -33,39 +37,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
     total_salary_this_month: 0,
     total_epf_this_month: 0,
     total_etf_this_month: 0,
-    total_net_salary_this_month: 0,
+    total_net_salary_this_month: 0
   });
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Initial user check
+  // Initial Data Load
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const userData = await api.getUser();
-          setUser(userData);
-          await fetchData();
-        } catch (error) {
-          console.error("Failed to restore session", error);
-          localStorage.removeItem('token');
-        }
-      }
+    const token = localStorage.getItem('token');
+    if (token) {
+      checkAuthAndFetch();
+    } else {
       setLoading(false);
-    };
-    checkAuth();
+    }
   }, []);
 
-  const fetchData = async () => {
+  async function checkAuthAndFetch() {
     try {
-      // Don't set global loading to true here to avoid full screen flicker on refresh if possible,
-      // or handle it gracefully. For now, we assume user is authenticated so we fetch.
+      const userData = await api.getUser();
+      setUser(userData);
+      await fetchData();
+    } catch (error) {
+      console.error("Session restore failed", error);
+      localStorage.removeItem('token');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchData() {
+    try {
+      setLoading(true);
       const [workersData, payrollsData, statsData, monthlyStatsData] = await Promise.all([
         api.getWorkers(),
         api.getPayrolls(),
         api.getDashboardStats(),
-        api.getMonthlyData(),
+        api.getMonthlyData()
       ]);
 
       setWorkers(workersData);
@@ -73,10 +81,129 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setStats(statsData);
       setMonthlyData(monthlyStatsData);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('Failed to load initial data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Worker Actions
+  const addWorker = async (worker: Omit<Worker, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      // Fraud Check
+      const fraudAlert = detectWorkerFraud(worker, workers);
+      if (fraudAlert.detected && fraudAlert.severity === 'high') {
+        toast.error(fraudAlert.reason);
+        throw new Error(fraudAlert.reason);
+      }
+
+      const newWorker = await api.createWorker(worker);
+      setWorkers(prev => [...prev, newWorker]);
+      await refreshStats();
+    } catch (error) {
+      console.error("Add worker error:", error);
+      throw error;
     }
   };
 
+  const updateWorker = async (id: string, updates: Partial<Worker>) => {
+    try {
+      // Fraud Check (only if bank details changing)
+      if (updates.bank_account_no || updates.nic_no) {
+        const fraudAlert = detectWorkerFraud({ ...updates, id }, workers);
+        if (fraudAlert.detected && fraudAlert.severity === 'high') {
+          toast.error(fraudAlert.reason);
+          throw new Error(fraudAlert.reason);
+        }
+      }
+
+      const updated = await api.updateWorker(id, updates);
+      setWorkers(prev => prev.map(w => w.id === id ? updated : w));
+    } catch (error) {
+      console.error("Update worker error:", error);
+      throw error;
+    }
+  };
+
+  const deleteWorker = async (id: string) => {
+    await api.deleteWorker(id);
+    setWorkers(prev => prev.filter(w => w.id !== id));
+    await refreshStats();
+  };
+
+  // Payroll Actions
+  const processPayroll = async (
+    workerId: string,
+    paymentMethod: 'cash' | 'bank_transfer' | 'cheque',
+    presentDays?: number,
+    leaveDays?: number,
+    otHours: number = 0,
+    incentives: number = 0,
+    otherDeductions: number = 0
+  ) => {
+    const worker = workers.find(w => w.id === workerId);
+    if (!worker) throw new Error('Worker not found');
+
+    const { year, month } = getCurrentMonthYear();
+
+    // Calculate payroll details
+    const calculated = calculateSalary(worker.basic_salary, presentDays || 26, leaveDays, otHours, incentives, otherDeductions);
+
+    const payrollData = {
+      worker_id: workerId,
+      worker_name: worker.full_name,
+      worker_position: worker.job_position,
+      worker_nic: worker.nic_no,
+      month: getMonthName(month),
+      year: year,
+      basic_salary: worker.basic_salary,
+      allowances: worker.cost_of_living_allowance + worker.mobile_allowance,
+      deductions: otherDeductions,
+      ot_hours: otHours,
+      ot_amount: calculated.ot_amount,
+      ot_rate: calculated.ot_rate,
+      incentives: incentives,
+      other_deductions: otherDeductions,
+      net_salary: calculated.net_salary,
+      paid_status: 'pending' as const,
+      payment_method: paymentMethod,
+      epf_employee: calculated.epf_employee,
+      epf_employer: calculated.epf_employee,
+      etf_employer: calculated.etf_employer,
+      paid_date: new Date().toISOString().slice(0, 19).replace('T', ' ')
+    };
+
+    // Fraud Check
+    const fraudAlert = detectPayrollFraud(
+      { ...payrollData, ot_hours: otHours },
+      worker,
+      payrolls
+    );
+    if (fraudAlert.detected) {
+      toast.warning(fraudAlert.reason);
+      if (fraudAlert.severity !== 'low') {
+        throw new Error(fraudAlert.reason);
+      }
+    }
+
+    const newPayroll = await api.createPayroll(payrollData);
+    setPayrolls(prev => [...prev, newPayroll]);
+    await refreshStats();
+    return newPayroll;
+  };
+
+  const bulkProcessPayroll = async (payrollsData: any[]) => {
+    const result = await api.createBulkPayrolls(payrollsData);
+    await fetchData();
+    return result;
+  };
+
+  const refreshStats = async () => {
+    const newStats = await api.getDashboardStats();
+    setStats(newStats);
+  };
+
+  // Auth wrappers
   const login = async (email: string, password: string) => {
     const response = await api.login({ email, password });
     localStorage.setItem('token', response.access_token);
@@ -95,104 +222,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       await api.logout();
     } catch (e) {
-      console.error("Logout failed on server", e);
+      // Ignore logout errors
     }
     localStorage.removeItem('token');
     setUser(null);
     setWorkers([]);
     setPayrolls([]);
-  };
-
-  const refreshStats = async () => {
-    try {
-      const statsData = await api.getDashboardStats();
-      setStats(statsData);
-      const monthly = await api.getMonthlyData();
-      setMonthlyData(monthly);
-    } catch (e) {
-      console.error("Failed to refresh stats", e);
-    }
-  };
-
-  const addWorker = async (workerData: Omit<Worker, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const newWorker = await api.createWorker(workerData);
-      setWorkers(prev => [...prev, newWorker]);
-      await refreshStats();
-    } catch (error) {
-      console.error("Failed to add worker", error);
-      throw error;
-    }
-  };
-
-  const updateWorker = async (id: string, updates: Partial<Worker>) => {
-    try {
-      const updatedWorker = await api.updateWorker(id, updates);
-      setWorkers(prev => prev.map(w => w.id === id ? updatedWorker : w));
-      await refreshStats();
-    } catch (error) {
-      console.error("Failed to update worker", error);
-      throw error;
-    }
-  };
-
-  const deleteWorker = async (id: string) => {
-    try {
-      await api.deleteWorker(id);
-      setWorkers(prev => prev.filter(w => w.id !== id));
-      await refreshStats();
-    } catch (error) {
-      console.error("Failed to delete worker", error);
-      throw error;
-    }
-  };
-
-  const processPayroll = async (
-    workerId: string,
-    paymentMethod: 'cash' | 'bank_transfer' | 'cheque',
-    presentDays?: number,
-    leaveDays?: number
-  ): Promise<Payroll> => {
-    const worker = workers.find(w => w.id === workerId);
-    if (!worker) throw new Error('Worker not found');
-
-    const { month, year } = getCurrentMonthYear();
-
-    // Calculate salary based on attendance if provided, otherwise defaults to full salary
-    const calc = calculateSalary(worker.basic_salary, presentDays, leaveDays);
-
-    const payrollData = {
-      worker_id: worker.id,
-      worker_name: worker.full_name,
-      worker_position: worker.job_position,
-      worker_nic: worker.nic_no,
-      month: getMonthName(month),
-      year,
-      basic_salary: calc.basic_salary, // This is now the prorated amount
-      epf_employee: calc.epf_employee,
-      etf_employer: calc.etf_employer,
-      net_salary: calc.net_salary,
-      payment_method: paymentMethod,
-      paid_date: new Date().toISOString().split('T')[0],
-      paid_status: 'paid' as 'paid',
-      present_days: presentDays,
-      leave_days: leaveDays,
-    };
-
-    try {
-      const newPayroll = await api.createPayroll(payrollData);
-      setPayrolls(prev => [...prev, newPayroll]);
-      await refreshStats();
-      return newPayroll;
-    } catch (error) {
-      console.error("Failed to process payroll", error);
-      throw error;
-    }
+    setStats({
+      total_workers: 0,
+      active_workers: 0,
+      total_salary_this_month: 0,
+      total_epf_this_month: 0,
+      total_etf_this_month: 0,
+      total_net_salary_this_month: 0
+    });
   };
 
   return (
     <AppContext.Provider value={{
       user,
+      setUser,
       workers,
       payrolls,
       stats,
@@ -202,6 +251,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateWorker,
       deleteWorker,
       processPayroll,
+      bulkProcessPayroll,
       refreshStats,
       reloadData: fetchData,
       login,

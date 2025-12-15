@@ -21,6 +21,11 @@ export async function getUser(): Promise<User> {
   return data;
 }
 
+export async function updateProfile(data: any): Promise<{ message: string, user: User }> {
+  const { data: response } = await axiosInstance.post('/auth/profile', data);
+  return response;
+}
+
 // Workers API
 export async function getWorkers(): Promise<Worker[]> {
   const { data } = await axiosInstance.get('/workers');
@@ -67,6 +72,11 @@ export async function updatePayrollStatus(id: string, status: 'pending' | 'paid'
     paid_status: status,
     paid_date: paidDate
   });
+  return data;
+}
+
+export async function createBulkPayrolls(payrolls: any[]): Promise<{ processed_count: number, errors: string[] }> {
+  const { data } = await axiosInstance.post('/payrolls/bulk', { payrolls });
   return data;
 }
 

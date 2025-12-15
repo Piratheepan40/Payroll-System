@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { WorkersTable } from '@/components/workers/WorkersTable';
 import { WorkerFormDialog } from '@/components/workers/WorkerFormDialog';
-import { WorkerProfileDialog } from '@/components/workers/WorkerProfileDialog';
 import { useApp } from '@/context/AppContext';
 import { Worker } from '@/types';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,8 +20,8 @@ import { Helmet } from 'react-helmet-async';
 
 export default function Workers() {
   const { workers, addWorker, updateWorker, deleteWorker } = useApp();
+  const navigate = useNavigate();
   const [formDialogOpen, setFormDialogOpen] = useState(false);
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | undefined>();
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
@@ -33,8 +33,7 @@ export default function Workers() {
   };
 
   const handleView = (worker: Worker) => {
-    setSelectedWorker(worker);
-    setProfileDialogOpen(true);
+    navigate(`/workers/${worker.id}`);
   };
 
   const handleEdit = (worker: Worker) => {
@@ -102,15 +101,6 @@ export default function Workers() {
         worker={selectedWorker}
         mode={formMode}
       />
-
-      {/* Profile Dialog */}
-      {selectedWorker && (
-        <WorkerProfileDialog
-          open={profileDialogOpen}
-          onClose={() => setProfileDialogOpen(false)}
-          worker={selectedWorker}
-        />
-      )}
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

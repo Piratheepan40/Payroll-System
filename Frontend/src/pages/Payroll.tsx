@@ -5,11 +5,11 @@ import { toast } from 'sonner';
 import { generateSalarySlipPDF } from '@/lib/pdf-generator';
 
 export default function Payroll() {
-  const { payrolls, workers, processPayroll } = useApp();
+  const { payrolls, workers, processPayroll, bulkProcessPayroll } = useApp();
 
-  const handleProcessPayroll = async (workerId: string, paymentMethod: 'cash' | 'bank_transfer' | 'cheque', presentDays?: number, leaveDays?: number) => {
+  const handleProcessPayroll = async (workerId: string, paymentMethod: 'cash' | 'bank_transfer' | 'cheque', presentDays?: number, leaveDays?: number, otHours?: number, incentives?: number, otherDeductions?: number) => {
     try {
-      const newPayroll = await processPayroll(workerId, paymentMethod, presentDays, leaveDays);
+      const newPayroll = await processPayroll(workerId, paymentMethod, presentDays, leaveDays, otHours, incentives, otherDeductions);
       toast.success(`Salary processed for ${newPayroll.worker_name}`);
 
       // Auto-generate and download receipt
@@ -43,12 +43,26 @@ export default function Payroll() {
     }
   };
 
+  const handleBulkProcess = async (payrollsData: any[]) => {
+    try {
+      const result = await bulkProcessPayroll(payrollsData);
+      toast.success(`Allocated salaries for ${result.processed_count} workers`);
+      if (result.errors && result.errors.length > 0) {
+        toast.warning(`Skipped ${result.errors.length} workers: ${result.errors[0]}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to bulk process:', error);
+      toast.error('Failed to process bulk payroll.');
+    }
+  };
+
   return (
     <Layout title="Payroll" subtitle="Process salaries and manage payments">
       <PayrollTable
         payrolls={payrolls}
         workers={workers}
         onProcess={handleProcessPayroll}
+        onBulkProcess={handleBulkProcess}
       />
     </Layout>
   );

@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import WorkerPortfolio from "./pages/WorkerPortfolio";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const AppRoutes = () => {
 
         <Route path="/" element={<ProtectedRoute><PageTransition><Dashboard /></PageTransition></ProtectedRoute>} />
         <Route path="/workers" element={<ProtectedRoute><PageTransition><Workers /></PageTransition></ProtectedRoute>} />
+        <Route path="/workers/:id" element={<ProtectedRoute><PageTransition><WorkerPortfolio /></PageTransition></ProtectedRoute>} />
         <Route path="/payroll" element={<ProtectedRoute><PageTransition><Payroll /></PageTransition></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><PageTransition><Reports /></PageTransition></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><PageTransition><Settings /></PageTransition></ProtectedRoute>} />

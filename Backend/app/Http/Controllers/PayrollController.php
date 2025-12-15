@@ -30,6 +30,11 @@ class PayrollController extends Controller
             'paid_status' => 'in:pending,paid',
             'present_days' => 'nullable|integer|min:0',
             'leave_days' => 'nullable|integer|min:0',
+            'ot_hours' => 'nullable|numeric|min:0',
+            'ot_rate' => 'nullable|numeric|min:0',
+            'ot_amount' => 'nullable|numeric|min:0',
+            'incentives' => 'nullable|numeric|min:0',
+            'other_deductions' => 'nullable|numeric|min:0',
         ]);
 
         // Check for duplicate payment
@@ -65,6 +70,67 @@ class PayrollController extends Controller
         }
 
         return response()->json($payroll, 201);
+    }
+
+    public function bulkStore(Request $request)
+    {
+        $validated = $request->validate([
+            'payrolls' => 'required|array',
+            'payrolls.*.worker_id' => 'required|exists:workers,id',
+            'payrolls.*.month' => 'required|string',
+            'payrolls.*.year' => 'required|integer',
+            'payrolls.*.basic_salary' => 'required|numeric',
+            'payrolls.*.epf_employee' => 'required|numeric',
+            'payrolls.*.etf_employer' => 'required|numeric',
+            'payrolls.*.net_salary' => 'required|numeric',
+            'payrolls.*.payment_method' => 'required|in:cash,bank_transfer,cheque',
+            'payrolls.*.paid_date' => 'required|date',
+            'payrolls.*.paid_status' => 'in:pending,paid',
+            'payrolls.*.present_days' => 'nullable|integer|min:0',
+            'payrolls.*.leave_days' => 'nullable|integer|min:0',
+            'payrolls.*.ot_hours' => 'nullable|numeric|min:0',
+            'payrolls.*.ot_rate' => 'nullable|numeric|min:0',
+            'payrolls.*.ot_amount' => 'nullable|numeric|min:0',
+            'payrolls.*.incentives' => 'nullable|numeric|min:0',
+            'payrolls.*.other_deductions' => 'nullable|numeric|min:0',
+        ]);
+
+        $createdPayrolls = [];
+        $errors = [];
+
+        foreach ($validated['payrolls'] as $index => $data) {
+            // Check for duplicate
+            $exists = Payroll::where('worker_id', $data['worker_id'])
+                ->where('month', $data['month'])
+                ->where('year', $data['year'])
+                ->where('paid_status', 'paid')
+                ->exists();
+
+            if ($exists) {
+                $errors[] = "Worker ID {$data['worker_id']} already paid for {$data['month']} {$data['year']}.";
+                continue;
+            }
+
+            $payroll = Payroll::create($data);
+            
+            // Send email (optional: queue this for bulk)
+            try {
+                if ($payroll->worker && $payroll->worker->email) {
+                    // Ideally use Queue here for bulk
+                    Mail::to($payroll->worker->email)->send(new SalaryReceiptMail($payroll));
+                }
+            } catch (\Exception $e) {
+                Log::error("Bulk email failed for ID {$payroll->id}: " . $e->getMessage());
+            }
+
+            $createdPayrolls[] = $payroll;
+        }
+
+        return response()->json([
+            'message' => 'Bulk processing completed',
+            'processed_count' => count($createdPayrolls),
+            'errors' => $errors
+        ], 201);
     }
 
     public function show(Payroll $payroll)

@@ -45,6 +45,8 @@ export function WorkerFormDialog({
     job_position: '',
     joined_date: new Date().toISOString().split('T')[0],
     basic_salary: 0,
+    cost_of_living_allowance: 0,
+    mobile_allowance: 0,
     bank_name: '',
     bank_account_no: '',
     status: 'active' as 'active' | 'inactive',
@@ -64,7 +66,11 @@ export function WorkerFormDialog({
           job_position: worker.job_position || '',
           joined_date: worker.joined_date || new Date().toISOString().split('T')[0],
           basic_salary: worker.basic_salary || 0,
+          cost_of_living_allowance: worker.cost_of_living_allowance || 0,
+          mobile_allowance: worker.mobile_allowance || 0,
+          salary_type: worker.salary_type || 'monthly',
           bank_name: worker.bank_name || '',
+          bank_branch: worker.bank_branch || '',
           bank_account_no: worker.bank_account_no || '',
           status: worker.status || 'active',
         });
@@ -80,7 +86,11 @@ export function WorkerFormDialog({
           job_position: '',
           joined_date: new Date().toISOString().split('T')[0],
           basic_salary: 0,
+          cost_of_living_allowance: 0,
+          mobile_allowance: 0,
+          salary_type: 'monthly',
           bank_name: '',
+          bank_branch: '',
           bank_account_no: '',
           status: 'active',
         });
@@ -190,12 +200,36 @@ export function WorkerFormDialog({
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="salary_type">Salary Type</Label>
+              <Select
+                value={formData.salary_type}
+                onValueChange={(value) => setFormData({ ...formData, salary_type: value as 'monthly' | 'daily' | 'contract' })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="bank_name">Bank Name *</Label>
               <Input
                 id="bank_name"
                 value={formData.bank_name}
                 onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank_branch">Branch</Label>
+              <Input
+                id="bank_branch"
+                value={formData.bank_branch}
+                onChange={(e) => setFormData({ ...formData, bank_branch: e.target.value })}
               />
             </div>
             <div className="space-y-2">

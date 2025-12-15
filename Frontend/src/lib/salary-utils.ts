@@ -3,7 +3,14 @@ import { SalaryCalculation } from '@/types';
 export const EPF_RATE = 0.08; // 8%
 export const ETF_RATE = 0.12; // 12%
 
-export function calculateSalary(basicMonthlySalary: number, presentDays?: number, leaveDays?: number): SalaryCalculation {
+export function calculateSalary(
+  basicMonthlySalary: number,
+  presentDays?: number,
+  leaveDays?: number,
+  otHours: number = 0,
+  incentives: number = 0,
+  otherDeductions: number = 0
+): SalaryCalculation {
   let finalBasicSalary = basicMonthlySalary;
 
   // If attendance is provided, prorate the salary
@@ -17,15 +24,32 @@ export function calculateSalary(basicMonthlySalary: number, presentDays?: number
     }
   }
 
+  // Calculate OT
+  // Formula: (Basic Monthly / 30 / 8) * 1.5 * Hours
+  // We use 240 hours (30 * 8) as base
+  const hourlyRate = basicMonthlySalary / 240;
+  const otRate = hourlyRate * 1.5;
+  const otAmount = otRate * otHours;
+
   const epf_employee = Math.round(finalBasicSalary * EPF_RATE * 100) / 100;
   const etf_employer = Math.round(finalBasicSalary * ETF_RATE * 100) / 100;
-  const net_salary = Math.round((finalBasicSalary - epf_employee) * 100) / 100;
+
+  // Net Salary = (Basic + OT + Incentives) - (EPF + Deductions)
+  const earnings = finalBasicSalary + otAmount + incentives;
+  const deductions = epf_employee + otherDeductions;
+
+  const net_salary = Math.round((earnings - deductions) * 100) / 100;
 
   return {
-    basic_salary: Math.round(finalBasicSalary * 100) / 100, // Return the EARNED basic, not the fixed monthly
+    basic_salary: Math.round(finalBasicSalary * 100) / 100,
     epf_employee,
     etf_employer,
     net_salary,
+    ot_hours: otHours,
+    ot_rate: Math.round(otRate * 100) / 100,
+    ot_amount: Math.round(otAmount * 100) / 100,
+    incentives: Math.round(incentives * 100) / 100,
+    other_deductions: Math.round(otherDeductions * 100) / 100,
   };
 }
 

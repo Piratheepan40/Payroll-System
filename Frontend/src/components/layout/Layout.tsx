@@ -16,7 +16,7 @@ export function Layout({ children, title, subtitle }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-background via-background to-muted/50">
       {/* Mobile menu button */}
       <div className="fixed top-5 left-5 z-50 lg:hidden">
         <Button

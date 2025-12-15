@@ -11,17 +11,57 @@ import { Helmet } from 'react-helmet-async';
 import { User, Mail, Shield, Key, Camera, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function Profile() {
-    const { user } = useApp();
+import { updateProfile } from '@/lib/api';
+import { useState } from 'react';
 
-    const handleUpdateProfile = (e: React.FormEvent) => {
+export default function Profile() {
+    const { user, setUser } = useApp();
+    const [loading, setLoading] = useState(false);
+
+    const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        toast.info("Profile update functionality is coming soon!");
+        setLoading(true);
+        const formData = new FormData(e.currentTarget);
+        const name = formData.get('name');
+
+        try {
+            const res = await updateProfile({ name });
+            setUser(res.user);
+            toast.success('Profile updated successfully!');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update profile');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleChangePassword = (e: React.FormEvent) => {
+    const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        toast.info("Password change functionality is coming soon!");
+        setLoading(true);
+        const formData = new FormData(e.currentTarget);
+        const current_password = formData.get('current_password');
+        const new_password = formData.get('new_password');
+        const new_password_confirmation = formData.get('new_password_confirmation');
+
+        if (new_password !== new_password_confirmation) {
+            toast.error('New passwords do not match');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            await updateProfile({
+                current_password,
+                new_password,
+                new_password_confirmation
+            });
+            toast.success('Password updated successfully!');
+            (e.target as HTMLFormElement).reset();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to update password');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -94,7 +134,7 @@ export default function Profile() {
                                             <Label htmlFor="name">Full Name</Label>
                                             <div className="relative">
                                                 <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                <Input id="name" defaultValue={user?.name} className="pl-9" />
+                                                <Input name="name" id="name" defaultValue={user?.name} className="pl-9" required />
                                             </div>
                                         </div>
 
@@ -119,7 +159,9 @@ export default function Profile() {
                                     </div>
 
                                     <div className="pt-4">
-                                        <Button type="submit">Save Changes</Button>
+                                        <Button type="submit" disabled={loading}>
+                                            {loading ? 'Saving...' : 'Save Changes'}
+                                        </Button>
                                     </div>
                                 </form>
                             </CardContent>
@@ -140,7 +182,7 @@ export default function Profile() {
                                         <Label htmlFor="current-password">Current Password</Label>
                                         <div className="relative">
                                             <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input id="current-password" type="password" className="pl-9" placeholder="••••••••" />
+                                            <Input name="current_password" type="password" className="pl-9" placeholder="••••••••" required />
                                         </div>
                                     </div>
 
@@ -148,7 +190,7 @@ export default function Profile() {
                                         <Label htmlFor="new-password">New Password</Label>
                                         <div className="relative">
                                             <Key className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input id="new-password" type="password" className="pl-9" placeholder="••••••••" />
+                                            <Input name="new_password" type="password" className="pl-9" placeholder="••••••••" required />
                                         </div>
                                         <p className="text-[0.8rem] text-muted-foreground">
                                             Password should be at least 8 characters long.
@@ -159,12 +201,14 @@ export default function Profile() {
                                         <Label htmlFor="confirm-password">Confirm New Password</Label>
                                         <div className="relative">
                                             <Key className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                            <Input id="confirm-password" type="password" className="pl-9" placeholder="••••••••" />
+                                            <Input name="new_password_confirmation" type="password" className="pl-9" placeholder="••••••••" required />
                                         </div>
                                     </div>
 
                                     <div className="pt-4">
-                                        <Button type="submit">Update Password</Button>
+                                        <Button type="submit" disabled={loading}>
+                                            {loading ? 'Updating...' : 'Update Password'}
+                                        </Button>
                                     </div>
                                 </form>
                             </CardContent>

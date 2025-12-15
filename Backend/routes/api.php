@@ -14,8 +14,10 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::post('/auth/profile', [AuthController::class, 'updateProfile']);
 
     Route::apiResource('workers', WorkerController::class);
+    Route::post('/payrolls/bulk', [PayrollController::class, 'bulkStore']);
     Route::apiResource('payrolls', PayrollController::class);
     
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);

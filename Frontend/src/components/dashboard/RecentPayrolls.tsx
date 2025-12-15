@@ -24,7 +24,7 @@ export function RecentPayrolls({ payrolls }: RecentPayrollsProps) {
   };
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow border-border/50">
+    <Card className="glass-card border-border/50">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
@@ -86,8 +86,8 @@ export function RecentPayrolls({ payrolls }: RecentPayrollsProps) {
                     variant="secondary"
                     className={
                       payroll.paid_status === 'paid'
-                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 text-xs font-semibold'
-                        : 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 text-xs font-semibold'
+                        ? 'bg-emerald-100/50 text-emerald-700 border-emerald-200/50 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800 text-xs font-semibold'
+                        : 'bg-amber-100/50 text-amber-700 border-amber-200/50 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 text-xs font-semibold'
                     }
                   >
                     {payroll.paid_status}

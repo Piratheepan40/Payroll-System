@@ -23,7 +23,11 @@ class WorkerController extends Controller
             'job_position' => 'required|string',
             'joined_date' => 'required|date',
             'basic_salary' => 'required|numeric',
+            'cost_of_living_allowance' => 'nullable|numeric',
+            'mobile_allowance' => 'nullable|numeric',
+            'salary_type' => 'in:monthly,daily,contract',
             'bank_name' => 'required|string',
+            'bank_branch' => 'nullable|string',
             'bank_account_no' => 'required|string',
             'email' => 'nullable|email',
             'status' => 'in:active,inactive'
@@ -49,7 +53,11 @@ class WorkerController extends Controller
             'job_position' => 'string',
             'joined_date' => 'date',
             'basic_salary' => 'numeric',
+            'cost_of_living_allowance' => 'nullable|numeric',
+            'mobile_allowance' => 'nullable|numeric',
+            'salary_type' => 'in:monthly,daily,contract',
             'bank_name' => 'string',
+            'bank_branch' => 'nullable|string',
             'bank_account_no' => 'string',
             'email' => 'nullable|email',
             'status' => 'in:active,inactive'

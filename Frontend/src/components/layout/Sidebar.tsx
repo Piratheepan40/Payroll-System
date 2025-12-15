@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/context/AppContext';
+import logo from '@/assets/logo.png';
 
 interface SidebarProps {
   className?: string;
@@ -43,7 +44,7 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen sidebar-gradient border-r border-sidebar-border transition-all duration-300 ease-out',
+        'fixed left-0 top-0 z-40 h-screen sidebar-gradient border-r border-sidebar-border/50 backdrop-blur-xl transition-all duration-300 ease-out',
         collapsed ? 'w-20' : 'w-72',
         className
       )}
@@ -51,9 +52,8 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-20 items-center gap-3 px-5 border-b border-sidebar-border">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-lg">
-            <Building2 className="h-6 w-6 text-primary-foreground" />
-            <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-sidebar-background animate-pulse-soft" />
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-lg overflow-hidden">
+            <img src={logo} alt="Logo" className="w-full h-full object-cover" />
           </div>
           {!collapsed && (
             <div className="animate-fade-in">

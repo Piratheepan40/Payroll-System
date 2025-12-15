@@ -3,28 +3,22 @@ import { formatCurrency } from './salary-utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export function generateSalarySlipPDF(payroll: Payroll): void {
-  // A5 size: 148mm x 210mm - Optimized for single page
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a5'
-  });
-
+// Helper to draw a single slip on the current page
+function drawSalarySlipOnPage(doc: jsPDF, payroll: Payroll) {
   const pageWidth = 148;
   const pageHeight = 210;
-  const margin = 12; // Reduced back to 12mm for more width
+  const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
 
   // ==================== HEADER (Compact) ====================
   doc.setFillColor(14, 116, 144);
-  doc.rect(0, 0, pageWidth, 35, 'F'); // Reduced height
+  doc.rect(0, 0, pageWidth, 35, 'F');
 
   doc.setFillColor(6, 182, 212);
   doc.rect(0, 33, pageWidth, 2, 'F');
 
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14); // Slightly smaller
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('KALVAYAL SAMUGASEEVAKA SANGAM', pageWidth / 2, 13, { align: 'center' });
 
@@ -36,7 +30,7 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
   doc.setFont('helvetica', 'bold');
   doc.text(`${payroll.month} ${payroll.year}`, pageWidth / 2, 28, { align: 'center' });
 
-  let y = 42; // Start higher up
+  let y = 42;
 
   // ==================== EMPLOYEE DETAILS (Compact) ====================
   doc.setTextColor(14, 116, 144);
@@ -48,20 +42,31 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
 
   y += 6;
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8); // Smaller font for data
+  doc.setFontSize(8);
+
+  const department = payroll.worker?.department || 'N/A';
+  const cola = payroll.worker?.cost_of_living_allowance || 0;
+  const mobile = payroll.worker?.mobile_allowance || 0;
+
+  // Advanced Fields
+  const otAmount = payroll.ot_amount || 0;
+  const incentives = payroll.incentives || 0;
+  const otherDeductions = payroll.other_deductions || 0;
 
   const employeeData = [
     { label: 'Name', value: payroll.worker?.full_name || payroll.worker_name || 'N/A' },
     { label: 'NIC', value: payroll.worker?.nic_no || payroll.worker_nic || 'N/A' },
     { label: 'Position', value: payroll.worker?.job_position || payroll.worker_position || 'N/A' },
+    { label: 'Dept', value: department },
+    { label: 'Bank', value: payroll.worker?.bank_name || 'N/A' },
+    { label: 'Branch', value: payroll.worker?.bank_branch || 'N/A' },
+    { label: 'Acc No', value: payroll.worker?.bank_account_no || 'N/A' },
     { label: 'Date', value: new Date(payroll.paid_date).toLocaleDateString('en-LK') },
-    { label: 'Method', value: payroll.payment_method.replace('_', ' ').toUpperCase() },
   ];
 
-  // Two columns layout for employee info to save vertical space
   const midPoint = pageWidth / 2;
 
-  // Left Column (First 3 items)
+  // Left Column
   let localY = y;
   for (let i = 0; i < 3; i++) {
     doc.setFont('helvetica', 'bold');
@@ -73,9 +78,9 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
     localY += 4.5;
   }
 
-  // Right Column (Last 2 items)
+  // Right Column
   let rightY = y;
-  for (let i = 3; i < 5; i++) {
+  for (let i = 3; i < employeeData.length; i++) {
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(80, 80, 80);
     doc.text(employeeData[i].label + ':', midPoint + 5, rightY);
@@ -85,57 +90,19 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
     rightY += 4.5;
   }
 
-  y = localY + 2;
-
-  // ==================== ATTENDANCE (Compact Horizontal) ====================
-  if (payroll.present_days !== undefined && payroll.leave_days !== undefined) {
-    // Single line visual summary instead of big section
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(margin, y, contentWidth, 12, 1, 1, 'F');
-
-    doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
-    doc.setFont('helvetica', 'bold');
-
-    const totalDays = payroll.present_days + payroll.leave_days;
-    const attendancePercentage = totalDays > 0 ? ((payroll.present_days / totalDays) * 100).toFixed(1) : '0.0';
-
-    // Horizontal layout: Present | Leave | Total | %
-    const quarter = contentWidth / 4;
-    let x = margin;
-
-    // Present
-    doc.text('Present:', x + 2, y + 5);
-    doc.setTextColor(22, 163, 74); // Green
-    doc.text(`${payroll.present_days} Days`, x + 2, y + 9);
-
-    x += quarter;
-    // Leave
-    doc.setTextColor(80, 80, 80);
-    doc.text('Leave:', x + 2, y + 5);
-    doc.setTextColor(220, 38, 38); // Red
-    doc.text(`${payroll.leave_days} Days`, x + 2, y + 9);
-
-    x += quarter;
-    // Total
-    doc.setTextColor(80, 80, 80);
-    doc.text('Total:', x + 2, y + 5);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`${totalDays} Days`, x + 2, y + 9);
-
-    x += quarter;
-    // Pct
-    doc.setTextColor(80, 80, 80);
-    doc.text('Attendance:', x + 2, y + 5);
-    doc.setTextColor(14, 116, 144); // Brand
-    doc.text(`${attendancePercentage}%`, x + 2, y + 9);
-
-    y += 16;
-  } else {
-    y += 4;
-  }
+  y = Math.max(localY, rightY) + 2;
 
   // ==================== SALARY BREAKDOWN ====================
+  const earningsItems = [
+    { label: payroll.present_days !== undefined ? 'Earned Salary' : 'Basic Salary', value: payroll.basic_salary }
+  ];
+  if (cola > 0) earningsItems.push({ label: 'Cost of Living', value: cola });
+  if (mobile > 0) earningsItems.push({ label: 'Mobile Allowance', value: mobile });
+  if (otAmount > 0) earningsItems.push({ label: `Overtime (${payroll.ot_hours || 0} hrs)`, value: otAmount });
+  if (incentives > 0) earningsItems.push({ label: 'Incentives / Bonus', value: incentives });
+
+  const earningsBoxHeight = Math.max(14, 6 + (earningsItems.length * 4));
+
   doc.setTextColor(14, 116, 144);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -144,54 +111,64 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
 
   y += 6;
 
-  // Box heights reduced to 14mm
-  const boxHeight = 14;
-  const boxSpacing = 17; // Gap between boxes vertical start points
-
   // 1. EARNINGS
   doc.setFillColor(240, 249, 255);
-  doc.roundedRect(margin, y, contentWidth, boxHeight, 1, 1, 'F');
+  doc.roundedRect(margin, y, contentWidth, earningsBoxHeight, 1, 1, 'F');
 
   doc.setFontSize(8);
   doc.setTextColor(14, 116, 144);
   doc.setFont('helvetica', 'bold');
   doc.text('EARNINGS', margin + 3, y + 5);
 
-  const salaryLabel = payroll.present_days !== undefined ? 'Earned Salary (Prorated)' : 'Basic Salary';
-  doc.setTextColor(60, 60, 60);
-  doc.setFont('helvetica', 'normal');
-  doc.text(salaryLabel, margin + 40, y + 5);
+  let earnY = y + 5;
+  earningsItems.forEach((item) => {
+    doc.setTextColor(60, 60, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text(item.label, margin + 40, earnY);
 
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(9);
-  doc.text(formatCurrency(payroll.basic_salary), pageWidth - margin - 3, y + 9, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.text(formatCurrency(item.value), pageWidth - margin - 3, earnY, { align: 'right' });
+    earnY += 4;
+  });
 
-  y += boxSpacing;
+  y += earningsBoxHeight + 3;
 
   // 2. DEDUCTIONS
+  const deductionItems = [
+    { label: 'EPF (Employee 8%)', value: payroll.epf_employee }
+  ];
+  if (otherDeductions > 0) deductionItems.push({ label: 'Other Deductions', value: otherDeductions });
+
+  const deductionsBoxHeight = Math.max(14, 6 + (deductionItems.length * 4));
+
   doc.setFillColor(254, 242, 242);
-  doc.roundedRect(margin, y, contentWidth, boxHeight, 1, 1, 'F');
+  doc.roundedRect(margin, y, contentWidth, deductionsBoxHeight, 1, 1, 'F');
 
   doc.setFontSize(8);
   doc.setTextColor(220, 38, 38);
   doc.setFont('helvetica', 'bold');
   doc.text('DEDUCTIONS', margin + 3, y + 5);
 
-  doc.setTextColor(60, 60, 60);
-  doc.setFont('helvetica', 'normal');
-  doc.text('EPF (Employee 8%)', margin + 40, y + 5);
+  let dedY = y + 5;
+  deductionItems.forEach((item) => {
+    doc.setTextColor(60, 60, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text(item.label, margin + 40, dedY);
 
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(220, 38, 38);
-  doc.setFontSize(9);
-  doc.text(`- ${formatCurrency(payroll.epf_employee)}`, pageWidth - margin - 3, y + 9, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(220, 38, 38);
+    doc.setFontSize(9);
+    doc.text(`- ${formatCurrency(item.value)}`, pageWidth - margin - 3, dedY, { align: 'right' });
+    dedY += 4;
+  });
 
-  y += boxSpacing;
+  y += deductionsBoxHeight + 3;
 
-  // 3. EMPLOYER CONTRIBUTIONS
+  // 3. EMPLOYER
   doc.setFillColor(240, 253, 244);
-  doc.roundedRect(margin, y, contentWidth, boxHeight, 1, 1, 'F');
+  doc.roundedRect(margin, y, contentWidth, 14, 1, 1, 'F');
 
   doc.setFontSize(8);
   doc.setTextColor(22, 163, 74);
@@ -207,7 +184,7 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
   doc.setFontSize(9);
   doc.text(formatCurrency(payroll.etf_employer), pageWidth - margin - 3, y + 9, { align: 'right' });
 
-  y += boxSpacing + 2;
+  y += 17;
 
   // ==================== NET SALARY ====================
   doc.setFillColor(14, 116, 144);
@@ -222,7 +199,6 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
   doc.text(formatCurrency(payroll.net_salary), pageWidth - margin - 5, y + 9, { align: 'right' });
 
   // ==================== SIGNATURES ====================
-  // Fixed position at bottom of page
   const signatureY = pageHeight - 32;
 
   doc.setDrawColor(200, 200, 200);
@@ -253,10 +229,38 @@ export function generateSalarySlipPDF(payroll: Payroll): void {
   doc.setFont('helvetica', 'italic');
   doc.text(`Generated on ${new Date().toLocaleString('en-LK')}`, pageWidth / 2, footerY, { align: 'center' });
   doc.text('This transcript is computer generated.', pageWidth / 2, footerY + 3, { align: 'center' });
+}
 
-  // Save PDF
+export function generateSalarySlipPDF(payroll: Payroll): void {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a5'
+  });
+
+  drawSalarySlipOnPage(doc, payroll);
+
   const filenameName = (payroll.worker?.full_name || payroll.worker_name || 'Worker').replace(/\s+/g, '_');
   doc.save(`Salary_Receipt_${filenameName}_${payroll.month}_${payroll.year}.pdf`);
+}
+
+export function generateBulkSalarySlipsPDF(payrolls: Payroll[]): void {
+  if (!payrolls || payrolls.length === 0) return;
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a5'
+  });
+
+  payrolls.forEach((payroll, index) => {
+    if (index > 0) {
+      doc.addPage('a5', 'portrait');
+    }
+    drawSalarySlipOnPage(doc, payroll);
+  });
+
+  doc.save(`Bulk_Salary_Receipts_${payrolls.length}_Workers.pdf`);
 }
 export function generateDashboardReportPDF(
   stats: any,
@@ -374,4 +378,78 @@ export function generateDashboardReportPDF(
   }
 
   doc.save(`Payroll_Report_${month}_${year}.pdf`);
+}
+
+export function generateExperienceLetter(worker: Worker): void {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - (margin * 2);
+
+  // Letterhead
+  doc.setFillColor(14, 116, 144); // Primary color
+  doc.rect(0, 0, pageWidth, 40, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text('KALVAYAL SAMUGASEEVAKA SANGAM', pageWidth / 2, 20, { align: 'center' });
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('123 Main Street, Jaffna, Sri Lanka | +94 77 123 4567 | info@kalvayal.com', pageWidth / 2, 30, { align: 'center' });
+
+  // Date
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+  doc.text(`Date: ${new Date().toLocaleDateString('en-LK')}`, margin, 55);
+
+  // Title
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TO WHOM IT MAY CONCERN', pageWidth / 2, 70, { align: 'center' });
+  doc.setLineWidth(0.5);
+  doc.line(margin, 72, pageWidth - margin, 72);
+
+  // Body
+  const joinDate = new Date(worker.joined_date).toLocaleDateString('en-LK');
+  const exitDate = worker.resignation_date ? new Date(worker.resignation_date).toLocaleDateString('en-LK') : 'Present';
+  const lastWorking = worker.last_working_date ? new Date(worker.last_working_date).toLocaleDateString('en-LK') : new Date().toLocaleDateString('en-LK');
+
+  const bodyText = `
+This is to certify that Mr./Ms. ${worker.full_name} (NIC: ${worker.nic_no}) was employed with Kalvayal Samugaseevaka Sangam as a ${worker.job_position} from ${joinDate} to ${lastWorking}.
+
+During their tenure, we found them to be sincere, hardworking, and dedicated to their duties. They have shown great initiative and have been a valuable asset to our organization.
+
+We confirm that they have been relieved of their duties effective close of business on ${lastWorking} following their resignation on ${exitDate || 'N/A'}.
+
+We wish them all the best in their future endeavors.
+  `;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  const splitText = doc.splitTextToSize(bodyText.trim(), contentWidth);
+  doc.text(splitText, margin, 90);
+
+  // Signature
+  const sigY = 180;
+  doc.text('Sincerely,', margin, sigY);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Manager / Director', margin, sigY + 25);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Kalvayal Samugaseevaka Sangam', margin, sigY + 30);
+
+  // Footer/Stamp area
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(pageWidth - margin - 40, sigY - 10, 40, 40);
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Official Stamp', pageWidth - margin - 20, sigY + 10, { align: 'center' });
+
+  doc.save(`Experience_Letter_${worker.full_name.replace(/\s+/g, '_')}.pdf`);
 }

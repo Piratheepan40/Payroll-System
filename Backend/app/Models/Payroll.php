@@ -22,6 +22,11 @@ class Payroll extends Model
         'paid_status',
         'present_days',
         'leave_days',
+        'ot_hours',
+        'ot_rate',
+        'ot_amount',
+        'incentives',
+        'other_deductions',
     ];
 
     public function worker()
