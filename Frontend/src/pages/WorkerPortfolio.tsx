@@ -180,45 +180,47 @@ export default function WorkerPortfolio() {
                                         No payroll history found for this worker.
                                     </div>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Month/Year</TableHead>
-                                                <TableHead>Basic</TableHead>
-                                                <TableHead>Net Pay</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="text-right">Action</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {workerPayrolls.map((payroll) => (
-                                                <TableRow key={payroll.id}>
-                                                    <TableCell className="font-medium">
-                                                        {payroll.month} {payroll.year}
-                                                    </TableCell>
-                                                    <TableCell>{formatCurrency(payroll.basic_salary)}</TableCell>
-                                                    <TableCell className="font-bold text-primary">
-                                                        {formatCurrency(payroll.net_salary)}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={payroll.paid_status === 'paid' ? 'default' : 'secondary'}>
-                                                            {payroll.paid_status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => generateSalarySlipPDF(payroll)}
-                                                        >
-                                                            <Download className="h-4 w-4 mr-1" />
-                                                            Payslip
-                                                        </Button>
-                                                    </TableCell>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Month/Year</TableHead>
+                                                    <TableHead>Basic</TableHead>
+                                                    <TableHead>Net Pay</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead className="text-right">Action</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {workerPayrolls.map((payroll) => (
+                                                    <TableRow key={payroll.id}>
+                                                        <TableCell className="font-medium">
+                                                            {payroll.month} {payroll.year}
+                                                        </TableCell>
+                                                        <TableCell>{formatCurrency(payroll.basic_salary)}</TableCell>
+                                                        <TableCell className="font-bold text-primary">
+                                                            {formatCurrency(payroll.net_salary)}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge variant={payroll.paid_status === 'paid' ? 'default' : 'secondary'}>
+                                                                {payroll.paid_status}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => generateSalarySlipPDF(payroll)}
+                                                            >
+                                                                <Download className="h-4 w-4 mr-1" />
+                                                                Payslip
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>

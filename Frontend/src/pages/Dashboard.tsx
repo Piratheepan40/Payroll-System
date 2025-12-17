@@ -5,22 +5,29 @@ import { DashboardCharts } from '@/components/dashboard/DashboardCharts';
 import { RecentPayrolls } from '@/components/dashboard/RecentPayrolls';
 import { useApp } from '@/context/AppContext';
 import { formatCurrency } from '@/lib/salary-utils';
-import { Users, UserCheck, CreditCard, TrendingUp, Wallet, Building2, Download, FileText, Bell, AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { Users, UserCheck, Wallet, Download, FileText, Bell, Plus, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportPayrollToExcel } from '@/lib/excel-generator';
 import { getCurrentMonthYear, getMonthName } from '@/lib/salary-utils';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { generateDashboardReportPDF } from '@/lib/pdf-generator';
 import { Helmet } from 'react-helmet-async';
 import { useState, useEffect } from 'react';
 import { Alert as AlertType, generateAlerts } from '@/lib/alert-system';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function Dashboard() {
-  const { stats, payrolls, monthlyData, user, workers, loading, refreshStats } = useApp();
+  const { stats, payrolls, user, workers, refreshStats } = useApp();
   const { month, year } = getCurrentMonthYear();
   const [alerts, setAlerts] = useState<AlertType[]>([]);
+  const [showAlerts, setShowAlerts] = useState(true);
 
   useEffect(() => {
     refreshStats();
@@ -40,211 +47,164 @@ export default function Dashboard() {
     generateDashboardReportPDF(stats, payrolls, getMonthName(month), year);
   };
 
+  const currentMonthName = getMonthName(month);
+
   return (
     <Layout
       title="Dashboard"
-      subtitle={`Financial overview for ${getMonthName(month)} ${year}`}
+      subtitle={`Overview for ${currentMonthName} ${year}`}
     >
       <Helmet>
         <title>Dashboard - Kalvayal</title>
-        <meta name="description" content={`Financial overview for ${getMonthName(month)} ${year}`} />
       </Helmet>
 
-      <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="space-y-6 animate-in fade-in duration-500">
 
-        {/* Smart Alerts Section */}
+        {/* Header Actions Area - 'Clever' Compact Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card/40 p-4 rounded-xl border border-border/40 backdrop-blur-sm">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Hello, {user?.name?.split(' ')[0] || 'Admin'} 👋
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Everything is running smoothly today.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-9 hidden sm:flex">
+              <Download className="h-4 w-4 mr-2" />
+              Excel
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleGeneratePDF} className="h-9 hidden sm:flex">
+              <FileText className="h-4 w-4 mr-2" />
+              PDF
+            </Button>
+            {/* Mobile: Show dropdown for export actions */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild className="sm:hidden">
+                <Button variant="outline" size="sm" className="h-9">
+                  <Download className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGeneratePDF}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Export PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link to="/workers?action=new">
+              <Button size="sm" className="h-9 shadow-md bg-primary hover:bg-primary/90">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Worker</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Smart Alerts - Collapsible */}
         {alerts.length > 0 && (
-          <div className="space-y-3 mt-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Bell className="w-5 h-5 text-primary" /> Smart Alerts
-            </h3>
-            <div className="grid gap-3">
-              {alerts.map(alert => (
-                <Alert key={alert.id} variant={alert.type === 'danger' ? 'destructive' : 'default'} className={alert.type === 'warning' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : ''}>
-                  {alert.type === 'danger' && <AlertCircle className="h-4 w-4" />}
-                  {alert.type === 'warning' && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                  {alert.type === 'info' && <Info className="h-4 w-4" />}
-                  <AlertTitle>{alert.title}</AlertTitle>
-                  <AlertDescription>{alert.message}</AlertDescription>
-                </Alert>
-              ))}
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                <Bell className="w-4 h-4" />
+                Attention Needed
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 min-w-5">{alerts.length}</Badge>
+              </h3>
+              <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground" onClick={() => setShowAlerts(!showAlerts)}>
+                {showAlerts ? 'Hide' : 'Show'}
+              </Button>
             </div>
+
+            {showAlerts && (
+              <div className="grid gap-3 mb-6">
+                {alerts.slice(0, 3).map(alert => (
+                  <Alert key={alert.id} className="bg-card/50 border-l-4 border-l-amber-500 border-y-border/40 border-r-border/40 py-3">
+                    <div className="flex items-start gap-3">
+                      <Zap className="h-4 w-4 text-amber-500 mt-1" />
+                      <div className="flex-1">
+                        <AlertTitle className="text-sm font-semibold mb-0.5">{alert.title}</AlertTitle>
+                        <AlertDescription className="text-xs text-muted-foreground">{alert.message}</AlertDescription>
+                      </div>
+                    </div>
+                  </Alert>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Welcome & Quick Actions Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 mt-2">
-          {/* Welcome Card */}
-          <div className="lg:col-span-2 glass-card relative overflow-hidden p-8 flex flex-col justify-center">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        {/* Unified Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.total_workers === undefined ? (
+            Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)
+          ) : (
+            <>
+              <StatCard
+                title="Total Workers"
+                value={stats.total_workers}
+                icon={Users}
+                trend={{ value: 2, isPositive: true }}
+              />
+              <StatCard
+                title="Active Now"
+                value={stats.active_workers}
+                subtitle={`${stats.total_workers - stats.active_workers} inactive`}
+                icon={UserCheck}
+              />
+              <StatCard
+                title="Payroll (Net)"
+                value={formatCurrency(stats.total_net_salary_this_month)}
+                subtitle="This Month"
+                icon={Wallet}
+              />
+              <StatCard
+                title="Pending Payouts"
+                value={formatCurrency(stats.total_salary_this_month - stats.total_net_salary_this_month)} // Rough estimate logic for now
+                subtitle="Estimated"
+                icon={Zap}
+              // Reusing Zap for now, could be Clock
+              />
+            </>
+          )}
+        </div>
 
-            <div className="relative z-10">
-              <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
-                Welcome back, {user?.name || 'Admin'}! 👋
-              </h2>
-              <p className="text-muted-foreground text-lg mb-6 max-w-xl">
-                Here's your organization's financial overview for <span className="font-semibold text-primary">{getMonthName(month)} {year}</span>.
-                You have <span className="font-semibold text-foreground">{stats.active_workers || 0} active workers</span>.
-              </p>
+        {/* Charts & Activity Split */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Main Chart Area */}
+          <div className="xl:col-span-2 space-y-6">
+            <DashboardCharts workers={workers} payrolls={payrolls} />
+          </div>
 
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={handleExportExcel}
-                  className="bg-card hover:bg-accent/5 text-foreground border border-border/50 shadow-sm"
-                >
-                  <Download className="h-4 w-4 mr-2 text-primary" />
-                  Export Report
-                </Button>
-                <Button
-                  onClick={handleGeneratePDF}
-                  className="bg-card hover:bg-accent/5 text-foreground border border-border/50 shadow-sm"
-                >
-                  <FileText className="h-4 w-4 mr-2 text-primary" />
-                  Generate PDF
-                </Button>
+          {/* Sidebar / Recent Activity */}
+          <div className="xl:col-span-1 space-y-6">
+            <RecentPayrolls payrolls={payrolls} />
+
+            {/* Quick Links / Mini Tools */}
+            <div className="bg-gradient-to-br from-primary/10 via-card to-card p-5 rounded-xl border border-primary/10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Zap className="w-24 h-24 text-primary" />
               </div>
-            </div>
-          </div>
-
-          {/* Quick Actions Card */}
-          <div className="glass-card p-6 flex flex-col justify-center gap-4">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-warning/10 text-warning">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-20 flex flex-col items-center justify-center gap-2 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all" asChild>
-                <a href="/workers?action=new">
-                  <Users className="h-6 w-6 text-primary" />
-                  <span className="text-xs font-semibold">Add Worker</span>
-                </a>
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col items-center justify-center gap-2 border-border/50 hover:border-success/50 hover:bg-success/5 transition-all" asChild>
-                <a href="/payroll">
-                  <Wallet className="h-6 w-6 text-success" />
-                  <span className="text-xs font-semibold">Process Salary</span>
-                </a>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Key Metrics Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-1 bg-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-              <h3 className="text-xl font-bold text-foreground tracking-tight">Key Metrics</h3>
-            </div>
-            <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Last updated: Just now
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stats.total_workers === undefined ? (
-              Array(3).fill(0).map((_, i) => (
-                <div key={i} className="h-32 rounded-2xl border border-border/50 bg-card/50 p-6">
-                  <Skeleton className="h-4 w-1/2 mb-4" />
-                  <Skeleton className="h-8 w-1/3 mb-2" />
-                  <Skeleton className="h-4 w-1/4" />
-                </div>
-              ))
-            ) : (
-              <>
-                <StatCard
-                  title="Total Workers"
-                  value={stats.total_workers}
-                  icon={Users}
-                  variant="primary"
-                />
-                <StatCard
-                  title="Active Workers"
-                  value={stats.active_workers}
-                  icon={UserCheck}
-                  variant="success"
-                  trend={{ value: 5, isPositive: true }}
-                />
-                <StatCard
-                  title="Net Paid"
-                  value={formatCurrency(stats.total_net_salary_this_month)}
-                  subtitle="This month"
-                  icon={Wallet}
-                  variant="accent"
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Financial Breakdown Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-8 w-1 bg-success rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-            <h3 className="text-xl font-bold text-foreground tracking-tight">Financial Breakdown</h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stats.total_salary_this_month === undefined ? (
-              Array(3).fill(0).map((_, i) => (
-                <div key={i} className="h-32 rounded-2xl border border-border/50 bg-card/50 p-6">
-                  <Skeleton className="h-4 w-1/2 mb-4" />
-                  <Skeleton className="h-8 w-1/3 mb-2" />
-                  <Skeleton className="h-4 w-1/4" />
-                </div>
-              ))
-            ) : (
-              <>
-                <StatCard
-                  title="Basic Salary"
-                  value={formatCurrency(stats.total_salary_this_month)}
-                  subtitle="Gross payroll"
-                  icon={CreditCard}
-                  variant="info"
-                />
-                <StatCard
-                  title="EPF (8%)"
-                  value={formatCurrency(stats.total_epf_this_month)}
-                  subtitle="Employee contribution"
-                  icon={TrendingUp}
-                  variant="warning"
-                />
-                <StatCard
-                  title="ETF (12%)"
-                  value={formatCurrency(stats.total_etf_this_month)}
-                  subtitle="Employer contribution"
-                  icon={Building2}
-                  variant="success"
-                />
-              </>
-            )}
-          </div>
-        </div>
-
-        <Separator className="my-8 opacity-50" />
-
-        {/* Analytics Section */}
-        <div className="pb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-8 w-1 bg-accent rounded-full shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-            <h3 className="text-xl font-bold text-foreground tracking-tight">Analytics & Activity</h3>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-1 gap-6">
-            {stats.total_workers === undefined ? (
-              <Skeleton className="h-[400px] w-full rounded-2xl" />
-            ) : (
-              <div className="space-y-6 col-span-full">
-                <DashboardCharts workers={workers} payrolls={payrolls} />
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                  <div className="xl:col-span-3">
-                    <RecentPayrolls payrolls={payrolls} />
+              <h3 className="font-semibold text-lg mb-2 relative z-10">Quick Actions</h3>
+              <div className="space-y-2 relative z-10">
+                <Link to="/payroll" className="block">
+                  <div className="group flex items-center justify-between p-3 bg-background/50 hover:bg-background rounded-lg border border-border/50 transition-all cursor-pointer">
+                    <span className="text-sm font-medium">Process {currentMonthName} Payroll</span>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                </div>
+                </Link>
+                <Link to="/reports" className="block">
+                  <div className="group flex items-center justify-between p-3 bg-background/50 hover:bg-background rounded-lg border border-border/50 transition-all cursor-pointer">
+                    <span className="text-sm font-medium">View Detailed Reports</span>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                </Link>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

@@ -51,7 +51,7 @@ export function Layout({ children, title, subtitle }: LayoutProps) {
       {/* Main content */}
       <div className="lg:ml-72 min-h-screen transition-all duration-300">
         <Header title={title} subtitle={subtitle} />
-        <main className="p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8">
           <Breadcrumbs />
           <div className="animate-fade-in">
             {children}

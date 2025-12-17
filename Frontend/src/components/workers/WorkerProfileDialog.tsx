@@ -1,4 +1,4 @@
-import { Worker } from '@/types';
+import { Worker as WorkerType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,7 @@ import {
 interface WorkerProfileDialogProps {
   open: boolean;
   onClose: () => void;
-  worker: Worker;
+  worker: WorkerType;
 }
 
 import { useState } from 'react'; // Added useState
@@ -39,7 +39,7 @@ export function WorkerProfileDialog({ open, onClose, worker }: WorkerProfileDial
   const [showExitDialog, setShowExitDialog] = useState(false);
   const salaryBreakdown = calculateSalary(worker.basic_salary);
 
-  const handleExitConfirm = async (workerId: string, data: any) => {
+  const handleExitConfirm = async (workerId: string, data: Partial<WorkerType>) => {
     await updateWorker(workerId, data);
     setShowExitDialog(false);
     onClose(); // Close profile after exit
@@ -48,42 +48,42 @@ export function WorkerProfileDialog({ open, onClose, worker }: WorkerProfileDial
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[calc(100%-2rem)] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading">Worker Profile</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 relative">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-bold">
-                {worker.full_name.charAt(0)}
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">{worker.full_name}</h2>
-                <p className="text-muted-foreground">{worker.job_position}</p>
-                <Badge
-                  className={worker.status === 'active' ? 'bg-success text-success-foreground mt-1' : 'mt-1'}
-                >
-                  {worker.status}
-                </Badge>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-bold">
+                  {worker.full_name.charAt(0)}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">{worker.full_name}</h2>
+                  <p className="text-muted-foreground">{worker.job_position}</p>
+                  <Badge
+                    className={worker.status === 'active' ? 'bg-success text-success-foreground mt-1' : 'mt-1'}
+                  >
+                    {worker.status}
+                  </Badge>
+                </div>
               </div>
 
-              {/* Exit Button */}
-              {worker.status === 'active' && (
-                <div className="absolute right-4 top-4">
-                  <Button variant="destructive" size="sm" onClick={() => setShowExitDialog(true)}>
+              {/* Action Buttons */}
+              <div className="flex gap-2 w-full sm:w-auto">
+                {worker.status === 'active' && (
+                  <Button variant="destructive" size="sm" onClick={() => setShowExitDialog(true)} className="flex-1 sm:flex-none">
                     Initiate Exit
                   </Button>
-                </div>
-              )}
-              {worker.status === 'resigned' && (
-                <div className="absolute right-4 top-4">
-                  <Button variant="outline" size="sm" onClick={() => generateExperienceLetter(worker)}>
+                )}
+                {worker.status === 'resigned' && (
+                  <Button variant="outline" size="sm" onClick={() => generateExperienceLetter(worker)} className="flex-1 sm:flex-none">
                     <Briefcase className="w-4 h-4 mr-2" /> Exp. Letter
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Details Grid */}
@@ -151,7 +151,7 @@ export function WorkerProfileDialog({ open, onClose, worker }: WorkerProfileDial
                 <CreditCard className="h-4 w-4 text-primary" />
                 Salary Breakdown
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="text-center p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground">Basic Salary</p>
                   <p className="text-lg font-bold text-foreground">

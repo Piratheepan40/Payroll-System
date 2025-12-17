@@ -158,6 +158,15 @@ export function Sidebar({ className }: SidebarProps) {
               </>
             )}
           </Button>
+
+          {/* Developer Credit */}
+          {!collapsed && (
+            <div className="pt-2 text-center">
+              <p className="text-[10px] text-sidebar-foreground/30 uppercase tracking-widest font-semibold hover:text-primary/50 transition-colors cursor-default">
+                Developed by NES
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </aside>

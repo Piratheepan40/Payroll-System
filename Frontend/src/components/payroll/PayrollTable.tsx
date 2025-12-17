@@ -176,26 +176,26 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportExcel}>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={handleExportExcel} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
-            Export Excel
+            <span className="hidden sm:inline">Export </span>Excel
           </Button>
-          <Button variant="outline" onClick={() => generateBulkSalarySlipsPDF(filteredPayrolls)} disabled={filteredPayrolls.length === 0}>
+          <Button variant="outline" onClick={() => generateBulkSalarySlipsPDF(filteredPayrolls)} disabled={filteredPayrolls.length === 0} className="w-full sm:w-auto">
             <span className="mr-2">📄</span>
-            Download PDFs
+            <span className="hidden sm:inline">Download </span>PDFs
           </Button>
 
           {selectedWorkerIds.size > 0 ? (
             <Button
               onClick={() => setShowBulkDialog(true)}
-              className="bg-primary hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
             >
               <Layers className="h-4 w-4 mr-2" />
               Process Selected ({selectedWorkerIds.size})
             </Button>
           ) : (
-            <Button onClick={() => setShowProcessForm(!showProcessForm)}>
+            <Button onClick={() => setShowProcessForm(!showProcessForm)} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Process Single
             </Button>
@@ -242,7 +242,7 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
       {showProcessForm && !showBulkDialog && (
         <div className="p-4 rounded-xl border bg-muted/30 space-y-4 animate-slide-up">
           <h3 className="font-semibold">Process Salary Payment</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Select value={selectedWorker} onValueChange={setSelectedWorker}>
               <SelectTrigger>
                 <SelectValue placeholder="Select worker" />
@@ -265,7 +265,7 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
                 <SelectItem value="cheque">Cheque</SelectItem>
               </SelectContent>
             </Select>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 col-span-1 sm:col-span-3 lg:col-span-1">
+            <div className="grid grid-cols-2 gap-2 md:col-span-2 lg:col-span-1">
               <div className="space-y-1">
                 <Input
                   type="number"
@@ -288,6 +288,8 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
                   className="bg-background"
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 md:col-span-2 lg:col-span-3">
               <div className="space-y-1">
                 <Input
                   type="number"
@@ -312,7 +314,7 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
                 <Input
                   type="number"
                   min="0"
-                  placeholder="Other Deductions"
+                  placeholder="Deductions"
                   value={deductions}
                   onChange={(e) => setDeductions(e.target.value)}
                   className="bg-background"
@@ -320,7 +322,7 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
               </div>
             </div>
 
-            <div className="flex gap-2 sm:col-span-3 lg:col-span-1">
+            <div className="flex gap-2 md:col-span-2 lg:col-span-3">
               <Button onClick={handleProcessPayroll} disabled={!selectedWorker || !presentDays || !leaveDays} className="flex-1">
                 Confirm Payment
               </Button>
@@ -350,7 +352,7 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
               <span className="text-sm text-primary font-medium">{selectedWorkerIds.size} selected</span>
             )}
           </div>
-          <div className="max-h-[300px] overflow-y-auto">
+          <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -395,71 +397,73 @@ export function PayrollTable({ payrolls, workers, onProcess, onBulkProcess }: Pa
       {/* Processed Payrolls Table */}
       <h3 className="font-semibold text-lg mt-8 mb-4">Processed History</h3>
       <div className="rounded-xl border bg-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="table-header">
-              <TableHead>Worker</TableHead>
-              <TableHead>Month</TableHead>
-              <TableHead>Basic Salary</TableHead>
-              <TableHead>EPF (8%)</TableHead>
-              <TableHead>ETF (12%)</TableHead>
-              <TableHead>Net Salary</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPayrolls.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  No payroll records found for {selectedMonth}
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="table-header">
+                <TableHead>Worker</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead>Basic Salary</TableHead>
+                <TableHead>EPF (8%)</TableHead>
+                <TableHead>ETF (12%)</TableHead>
+                <TableHead>Net Salary</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              filteredPayrolls.map((payroll) => (
-                <TableRow key={payroll.id} className="table-row-hover">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                        {(payroll.worker?.full_name || 'U').charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{payroll.worker?.full_name || 'Unknown Worker'}</p>
-                        <p className="text-xs text-muted-foreground">{payroll.worker?.job_position || payroll.worker_position}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{payroll.month} {payroll.year}</TableCell>
-                  <TableCell className="font-medium">{formatCurrency(payroll.basic_salary)}</TableCell>
-                  <TableCell className="text-warning">{formatCurrency(payroll.epf_employee)}</TableCell>
-                  <TableCell className="text-success">{formatCurrency(payroll.etf_employer)}</TableCell>
-                  <TableCell className="font-bold text-primary">{formatCurrency(payroll.net_salary)}</TableCell>
-                  <TableCell>
-                    <span className="capitalize text-sm">{payroll.payment_method.replace('_', ' ')}</span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={payroll.paid_status === 'paid' ? 'bg-success text-success-foreground' : ''}
-                    >
-                      {payroll.paid_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => generateSalarySlipPDF(payroll)}
-                    >
-                      <FileText className="h-4 w-4 mr-1" />
-                      PDF
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {filteredPayrolls.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    No payroll records found for {selectedMonth}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filteredPayrolls.map((payroll) => (
+                  <TableRow key={payroll.id} className="table-row-hover">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                          {(payroll.worker?.full_name || 'U').charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{payroll.worker?.full_name || 'Unknown Worker'}</p>
+                          <p className="text-xs text-muted-foreground">{payroll.worker?.job_position || payroll.worker_position}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{payroll.month} {payroll.year}</TableCell>
+                    <TableCell className="font-medium">{formatCurrency(payroll.basic_salary)}</TableCell>
+                    <TableCell className="text-warning">{formatCurrency(payroll.epf_employee)}</TableCell>
+                    <TableCell className="text-success">{formatCurrency(payroll.etf_employer)}</TableCell>
+                    <TableCell className="font-bold text-primary">{formatCurrency(payroll.net_salary)}</TableCell>
+                    <TableCell>
+                      <span className="capitalize text-sm">{payroll.payment_method.replace('_', ' ')}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={payroll.paid_status === 'paid' ? 'bg-success text-success-foreground' : ''}
+                      >
+                        {payroll.paid_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateSalarySlipPDF(payroll)}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Summary */}

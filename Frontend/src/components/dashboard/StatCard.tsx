@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface StatCardProps {
   title: string;
@@ -11,27 +11,9 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'accent' | 'info';
   className?: string;
+  onClick?: () => void;
 }
-
-const variantClasses = {
-  default: 'stat-card',
-  primary: 'stat-card stat-card-primary',
-  success: 'stat-card stat-card-success',
-  warning: 'stat-card stat-card-warning',
-  accent: 'stat-card', // Fallback or add specific class if needed
-  info: 'stat-card',
-};
-
-const iconVariantClasses = {
-  default: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-  primary: 'bg-primary/10 text-primary',
-  success: 'bg-success/10 text-success',
-  warning: 'bg-warning/10 text-warning',
-  accent: 'bg-accent/10 text-accent',
-  info: 'bg-info/10 text-info',
-};
 
 export function StatCard({
   title,
@@ -39,61 +21,56 @@ export function StatCard({
   subtitle,
   icon: Icon,
   trend,
-  variant = 'default',
   className,
+  onClick
 }: StatCardProps) {
   return (
-    <div
+    <Card
+      onClick={onClick}
       className={cn(
-        variantClasses[variant] || 'stat-card',
+        "group relative overflow-hidden transition-all duration-300 hover:shadow-md border-border/40 bg-card/50 backdrop-blur-sm",
+        onClick && "cursor-pointer hover:border-primary/20",
         className
       )}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="p-2.5 rounded-xl bg-primary/5 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/10">
+            <Icon className="h-5 w-5" />
+          </div>
+          {trend && (
+            <div className={cn(
+              "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+              trend.isPositive
+                ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
+                : "text-rose-600 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400"
+            )}>
+              {trend.isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              <span>{Math.abs(trend.value)}%</span>
+            </div>
+          )}
+        </div>
+
+        {/* Value & Title */}
+        <div className="space-y-1">
+          <h3 className="text-2xl font-bold tracking-tight text-foreground">
+            {value}
+          </h3>
+          <p className="text-sm font-medium text-muted-foreground/80">
             {title}
           </p>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground/70">{subtitle}</p>
-          )}
         </div>
-        <div
-          className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 shadow-sm',
-            iconVariantClasses[variant]
-          )}
-        >
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
 
-      <div className="space-y-2">
-        <p className="text-3xl font-bold text-foreground tracking-tight">
-          {value}
-        </p>
-
-        {trend && (
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold',
-                trend.isPositive
-                  ? 'bg-emerald-100/50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                  : 'bg-red-100/50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-              )}
-            >
-              {trend.isPositive ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              {Math.abs(trend.value)}%
-            </div>
-            <span className="text-xs text-muted-foreground font-medium">vs last month</span>
-          </div>
+        {/* Subtitle / Footer */}
+        {subtitle && (
+          <p className="mt-3 text-xs text-muted-foreground/60 font-medium">
+            {subtitle}
+          </p>
         )}
-      </div>
-    </div>
+
+        {/* Decorative Gradient Blob */}
+        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-2xl group-hover:from-primary/10 transition-colors" />
+      </CardContent>
+    </Card>
   );
 }

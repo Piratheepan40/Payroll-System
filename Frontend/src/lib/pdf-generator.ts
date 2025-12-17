@@ -1,4 +1,4 @@
-import { Payroll } from '@/types';
+import { Payroll, Worker as WorkerType } from '@/types';
 import { formatCurrency } from './salary-utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -380,7 +380,7 @@ export function generateDashboardReportPDF(
   doc.save(`Payroll_Report_${month}_${year}.pdf`);
 }
 
-export function generateExperienceLetter(worker: Worker): void {
+export function generateExperienceLetter(worker: WorkerType): void {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',

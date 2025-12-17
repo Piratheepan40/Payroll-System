@@ -1,4 +1,3 @@
-import { useRef, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 import { Worker, Payroll } from "@/types";
@@ -52,79 +51,103 @@ export function DashboardCharts({ workers, payrolls }: DashboardChartsProps) {
     })();
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 mt-6">
-            <div className="col-span-4 glass-card p-6">
-                <h3 className="font-bold text-lg mb-1">Salary Payout Trend</h3>
-                <p className="text-sm text-muted-foreground mb-6">Total net salary paid over the last 6 months</p>
-                <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={salaryTrendData}>
-                            <XAxis
-                                dataKey="name"
-                                stroke="#888888"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <YAxis
-                                stroke="#888888"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(value) => `LKR ${value / 1000}k`}
-                            />
-                            <Tooltip
-                                cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                                contentStyle={{
-                                    borderRadius: '12px',
-                                    border: 'none',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                                }}
-                            />
-                            <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            <div className="col-span-3 glass-card p-6">
-                <h3 className="font-bold text-lg mb-1">Workforce by Department</h3>
-                <p className="text-sm text-muted-foreground mb-6">Distribution of active workers</p>
-                <div className="h-[300px] flex items-center justify-center">
-                    {departmentData.length > 0 ? (
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-1 border-border/40 bg-card/50 backdrop-blur-sm shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-lg">Salary Payout Trend</CardTitle>
+                    <CardDescription>Total net salary paid over the last 6 months</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[250px] sm:h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={departmentData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {departmentData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
+                            <BarChart data={salaryTrendData} margin={{ top: 10, right: 5, left: -30, bottom: 0 }}>
+                                <XAxis
+                                    dataKey="name"
+                                    stroke="#888888"
+                                    fontSize={11}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis
+                                    stroke="#888888"
+                                    fontSize={11}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(value) => `${value / 1000}k`}
+                                />
                                 <Tooltip
+                                    cursor={{ fill: 'transparent' }}
                                     contentStyle={{
-                                        borderRadius: '12px',
-                                        border: 'none',
+                                        borderRadius: '8px',
+                                        border: '1px solid hsl(var(--border))',
+                                        backgroundColor: 'hsl(var(--popover))',
+                                        color: 'hsl(var(--popover-foreground))',
                                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                     }}
                                 />
-                                <Legend />
-                            </PieChart>
+                                <Bar
+                                    dataKey="total"
+                                    fill="hsl(var(--primary))"
+                                    radius={[4, 4, 0, 0]}
+                                    barSize={40}
+                                />
+                            </BarChart>
                         </ResponsiveContainer>
-                    ) : (
-                        <div className="text-muted-foreground text-sm text-center">
-                            No department data available.
-                            <br />Add departments to workers to see this chart.
-                        </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="col-span-1 border-border/40 bg-card/50 backdrop-blur-sm shadow-sm">
+                <CardHeader>
+                    <CardTitle className="text-lg">Workforce Distribution</CardTitle>
+                    <CardDescription>Active workers by department</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[250px] sm:h-[300px] flex items-center justify-center">
+                        {departmentData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={departmentData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={50}
+                                        outerRadius={80}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                        stroke="hsl(var(--card))"
+                                        strokeWidth={2}
+                                    >
+                                        {departmentData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            borderRadius: '8px',
+                                            border: '1px solid hsl(var(--border))',
+                                            backgroundColor: 'hsl(var(--popover))',
+                                            color: 'hsl(var(--popover-foreground))',
+                                            padding: '8px'
+                                        }}
+                                        itemStyle={{ padding: 0 }}
+                                    />
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        iconType="circle"
+                                        formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="text-muted-foreground text-sm text-center">
+                                No department data available.
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
